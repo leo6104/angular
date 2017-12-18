@@ -8,9 +8,9 @@ import { Hero }           from './hero';
 import { Observable }     from 'rxjs/Observable';
 import 'rxjs/add/observable/throw';
 
-import 'rxjs/add/operator/do';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/map';
+import { tap } from 'rxjs/operators/tap';
+import { catchError } from 'rxjs/operators/catchError';
+import { map } from 'rxjs/operators/map';
 
 @Injectable()
 export class HttpHeroService {
@@ -20,15 +20,17 @@ export class HttpHeroService {
 
   getHeroes (): Observable<Hero[]> {
     return this.http.get(this._heroesUrl)
-                    .map(this.extractData)
-                    // .do(data => console.log(data)) // eyeball results in the console
-                    .catch(this.handleError);
+                    .pipe(
+                      map(this.extractData),
+                    // tap(data => console.log(data)), // eyeball results in the console
+                      catchError(this.handleError)
+                    );
   }
 
   getHero(id: number | string) {
     return this.http
             .get('app/heroes/?id=${id}')
-            .map((r: Response) => r.json().data as Hero[]);
+            .pipe(map((r: Response) => r.json().data as Hero[]));
   }
 
   addHero (name: string): Observable<Hero>  {
@@ -37,8 +39,10 @@ export class HttpHeroService {
     let options = new RequestOptions({ headers: headers });
 
     return this.http.post(this._heroesUrl, body, options)
-                    .map(this.extractData)
-                    .catch(this.handleError);
+                    .pipe(
+                      map(this.extractData),
+                      catchError(this.handleError)
+                    );
   }
 
   updateHero (hero: Hero): Observable<Hero>  {

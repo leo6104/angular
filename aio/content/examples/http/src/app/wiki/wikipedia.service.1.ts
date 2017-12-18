@@ -3,7 +3,7 @@
 import { Injectable } from '@angular/core';
 import { Jsonp }      from '@angular/http';
 
-import 'rxjs/add/operator/map';
+import { map } from 'rxjs/operators/map';
 
 @Injectable()
 export class WikipediaService {
@@ -20,7 +20,7 @@ export class WikipediaService {
 
     return this.jsonp
                .get(wikiUrl + queryString)
-               .map(response => <string[]> response.json()[1]);
+               .pipe(map(response => <string[]> response.json()[1]));
     // #enddocregion query-string
   }
 }

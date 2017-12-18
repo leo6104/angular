@@ -2,9 +2,9 @@
 import { Component } from '@angular/core';
 
 import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/interval';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/take';
+import { interval } from 'rxjs/observable/interval';
+import { map } from 'rxjs/operators/map';
+import { take } from 'rxjs/operators/take';
 
 @Component({
   selector: 'app-hero-message',
@@ -25,9 +25,11 @@ export class HeroAsyncMessageComponent {
   constructor() { this.resend(); }
 
   resend() {
-    this.message$ = Observable.interval(500)
-      .map(i => this.messages[i])
-      .take(this.messages.length);
+    this.message$ = interval(500)
+      .pipe(
+        map(i => this.messages[i]),
+        take(this.messages.length)
+      );
   }
 }
 // #enddocregion

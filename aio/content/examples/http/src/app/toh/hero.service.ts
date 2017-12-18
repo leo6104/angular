@@ -12,8 +12,8 @@ import { Headers, RequestOptions } from '@angular/http';
 
 // #docregion rxjs-imports
 import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/map';
+import { map } from 'rxjs/operators/map';
+import { catchError } from 'rxjs/operators/catchError';
 // #enddocregion rxjs-imports
 
 import { Hero } from './hero';
@@ -31,8 +31,10 @@ export class HeroService {
   // #docregion methods, error-handling, http-get
   getHeroes(): Observable<Hero[]> {
     return this.http.get(this.heroesUrl)
-                    .map(this.extractData)
-                    .catch(this.handleError);
+                    .pipe(
+                      map(this.extractData),
+                      catchError(this.handleError)
+                    );
   }
   // #enddocregion error-handling, http-get, v1
 

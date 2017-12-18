@@ -5,9 +5,9 @@ import { Component, OnInit } from '@angular/core';
 
 // #docregion rxjs-imports
 import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/debounceTime';
-import 'rxjs/add/operator/distinctUntilChanged';
-import 'rxjs/add/operator/switchMap';
+import { debounceTime } from 'rxjs/operators/debounceTime';
+import { distinctUntilChanged } from 'rxjs/operators/distinctUntilChanged';
+import { switchMap } from 'rxjs/operators/switchMap';
 
 // #docregion import-subject
 import { Subject } from 'rxjs/Subject';
@@ -39,9 +39,11 @@ export class WikiSmartComponent implements OnInit {
   ngOnInit() {
     // #docregion observable-operators
     this.items = this.searchTermStream
-      .debounceTime(300)
-      .distinctUntilChanged()
-      .switchMap((term: string) => this.wikipediaService.search(term));
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap((term: string) => this.wikipediaService.search(term))
+      );
     // #enddocregion observable-operators
   }
 }

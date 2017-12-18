@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/publishLast';
+import { map } from 'rxjs/operators/map';
+import { publishLast } from 'rxjs/operators/publishLast';
 
 import { Contributor, ContributorGroup } from './contributors.model';
 import { CONTENT_URL_PREFIX } from 'app/documents/document.service';
@@ -22,35 +22,38 @@ export class ContributorService {
   private getContributors() {
     const contributors = this.http.get<{[key: string]: Contributor}>(contributorsPath)
       // Create group map
-      .map(contribs => {
-        const contribMap = new Map<string, Contributor[]>();
-        Object.keys(contribs).forEach(key => {
-          const contributor = contribs[key];
-          const group = contributor.group;
-          const contribGroup = contribMap[group];
-          if (contribGroup) {
-            contribGroup.push(contributor);
-          } else {
-            contribMap[group] = [contributor];
-          }
-        });
+      .pipe(
+        map(contribs => {
+          const contribMap = new Map<string, Contributor[]>();
+          Object.keys(contribs).forEach(key => {
+            const contributor = contribs[key];
+            const group = contributor.group;
+            const contribGroup = contribMap[group];
+            if (contribGroup) {
+              contribGroup.push(contributor);
+            } else {
+              contribMap[group] = [contributor];
+            }
+          });
 
-        return contribMap;
-      })
+          return contribMap;
+        }),
 
-      // Flatten group map into sorted group array of sorted contributors
-      .map(cmap => {
-        return Object.keys(cmap).map(key => {
-          const order = knownGroups.indexOf(key);
-          return {
-            name: key,
-            order: order === -1 ? knownGroups.length : order,
-            contributors: cmap[key].sort(compareContributors)
-          } as ContributorGroup;
-        })
-        .sort(compareGroups);
-      })
-      .publishLast();
+        // Flatten group map into sorted group array of sorted contributors
+        map(cmap => {
+          return Object.keys(cmap).map(key => {
+            const order = knownGroups.indexOf(key);
+            return {
+              name: key,
+              order: order === -1 ? knownGroups.length : order,
+              contributors: cmap[key].sort(compareContributors)
+            } as ContributorGroup;
+          })
+          .sort(compareGroups);
+        }),
+
+        publishLast()
+      );
 
     contributors.connect();
     return contributors;

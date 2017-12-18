@@ -1,7 +1,7 @@
 // #docplaster
 // #docregion
 // #docregion rxjs-operator-import
-import 'rxjs/add/operator/switchMap';
+import { switchMap } from 'rxjs/operators/switchMap';
 // #enddocregion rxjs-operator-import
 import { Component, OnInit, HostBinding } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
@@ -49,8 +49,10 @@ export class HeroDetailComponent implements OnInit {
   // #docregion ngOnInit
   ngOnInit() {
     this.hero$ = this.route.paramMap
-      .switchMap((params: ParamMap) =>
-        this.service.getHero(params.get('id')));
+      .pipe(
+        switchMap((params: ParamMap) =>
+          this.service.getHero(params.get('id')))
+      );
   }
   // #enddocregion ngOnInit
 

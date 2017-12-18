@@ -3,13 +3,14 @@ import { NgServiceWorker } from '@angular/service-worker';
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
 import 'rxjs/add/observable/of';
-import 'rxjs/add/operator/concat';
-import 'rxjs/add/operator/debounceTime';
-import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/startWith';
-import 'rxjs/add/operator/take';
-import 'rxjs/add/operator/takeUntil';
+import { concat } from 'rxjs/operators/concat';
+import { debounceTime } from 'rxjs/operators/debounceTime';
+import { filter } from 'rxjs/operators/filter';
+import { map } from 'rxjs/operators/map';
+import { startWith } from 'rxjs/operators/startWith';
+import { take } from  'rxjs/operators/take';
+import { takeUntil } from 'rxjs/operators/takeUntil';
+import { tap } from 'rxjs/operators/tap';
 
 import { Logger } from 'app/shared/logger.service';
 
@@ -32,17 +33,20 @@ export class SwUpdatesService implements OnDestroy {
   private onDestroy = new Subject();
   private checkForUpdateSubj = new Subject();
   updateActivated = this.sw.updates
-      .takeUntil(this.onDestroy)
-      .do(evt => this.log(`Update event: ${JSON.stringify(evt)}`))
-      .filter(({type}) => type === 'activation')
-      .map(({version}) => version);
+      .pipe(
+        takeUntil(this.onDestroy),
+        tap(evt => this.log(`Update event: ${JSON.stringify(evt)}`)),
+        filter(({type}) => type === 'activation'),
+        map(({version}) => version)
+      );
 
   constructor(private logger: Logger, private sw: NgServiceWorker) {
     this.checkForUpdateSubj
-        .debounceTime(this.checkInterval)
-        .startWith(null)
-        .takeUntil(this.onDestroy)
-        .subscribe(() => this.checkForUpdate());
+        .pipe(
+          debounceTime(this.checkInterval),
+          startWith(null),
+          takeUntil(this.onDestroy)
+        ).subscribe(() => this.checkForUpdate());
   }
 
   ngOnDestroy() {
@@ -60,9 +64,11 @@ export class SwUpdatesService implements OnDestroy {
     this.sw.checkForUpdate()
         // Temp workaround for https://github.com/angular/mobile-toolkit/pull/137.
         // TODO (gkalpak): Remove once #137 is fixed.
-        .concat(Observable.of(false)).take(1)
-        .do(v => this.log(`Update available: ${v}`))
-        .subscribe(v => v ? this.activateUpdate() : this.scheduleCheckForUpdate());
+        .pipe(
+          concat(Observable.of(false)),
+          take(1),
+          tap(v => this.log(`Update available: ${v}`))
+        ).subscribe(v => v ? this.activateUpdate() : this.scheduleCheckForUpdate());
   }
 
   private log(message: string) {

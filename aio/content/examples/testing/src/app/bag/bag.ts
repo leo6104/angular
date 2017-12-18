@@ -6,9 +6,8 @@ import { Component, ContentChildren, Directive, EventEmitter,
          Pipe, PipeTransform,
          SimpleChange } from '@angular/core';
 
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/operator/delay';
+import { of } from 'rxjs/observable/of';
+import { delay } from 'rxjs/operators/delay';
 
 ////////// The App: Services and Components for the tests. //////////////
 
@@ -27,7 +26,7 @@ export class FancyService {
 
   getAsyncValue() { return Promise.resolve('async value'); }
 
-  getObservableValue() { return Observable.of('observable value'); }
+  getObservableValue() { return of('observable value'); }
 
   getTimeoutValue() {
     return new Promise((resolve) => {
@@ -36,7 +35,7 @@ export class FancyService {
   }
 
   getObservableDelayValue() {
-    return Observable.of('observable delay value').delay(10);
+    return of('observable delay value').pipe(delay(10));
   }
 }
 // #enddocregion FancyService

@@ -1,6 +1,6 @@
 // #docplaster
 // #docregion
-import 'rxjs/add/operator/switchMap';
+import { switchMap } from 'rxjs/operators/switchMap';
 import { Component, OnInit, HostBinding }   from '@angular/core';
 import { ActivatedRoute, Router, ParamMap } from '@angular/router';
 import { Observable }                       from 'rxjs/Observable';
@@ -46,8 +46,10 @@ export class CrisisDetailComponent implements OnInit {
   // #docregion ngOnInit
   ngOnInit() {
     this.route.paramMap
-      .switchMap((params: ParamMap) =>
-        this.service.getCrisis(params.get('id')))
+      .pipe(
+        switchMap((params: ParamMap) =>
+          this.service.getCrisis(params.get('id')))
+      )
       .subscribe((crisis: Crisis) => {
         if (crisis) {
           this.editName = crisis.name;

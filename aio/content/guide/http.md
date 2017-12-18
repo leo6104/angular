@@ -164,7 +164,7 @@ RxJS has a useful operator called `.retry()`, which automatically resubscribes t
 First, import it:
 
 ```js
-import 'rxjs/add/operator/retry';
+import {retry} from 'rxjs/operators/retry';
 ```
 
 Then, you can use it with HTTP Observables like this:
@@ -173,7 +173,7 @@ Then, you can use it with HTTP Observables like this:
 http
   .get<ItemsResponse>('/api/items')
   // Retry this request up to 3 times.
-  .retry(3)
+  .pipe(retry(3))
   // Any errors after the 3rd retry will fall through to the app.
   .subscribe(...);
 ```
@@ -386,7 +386,7 @@ An interceptor that alters headers can be used for a number of different operati
 Because interceptors can process the request and response _together_, they can do things like log or time requests. Consider this interceptor which uses `console.log` to show how long each request takes:
 
 ```javascript
-import 'rxjs/add/operator/do';
+import {tap} from 'rxjs/operators/tap';
 
 export class TimingInterceptor implements HttpInterceptor {
   constructor(private auth: AuthService) {}
@@ -395,16 +395,18 @@ export class TimingInterceptor implements HttpInterceptor {
   	const started = Date.now();
     return next
       .handle(req)
-      .do(event => {
-        if (event instanceof HttpResponse) {
-          const elapsed = Date.now() - started;
-          console.log(`Request for ${req.urlWithParams} took ${elapsed} ms.`);
-        }
-      });
+      .pipe(
+        tap(event => {
+          if (event instanceof HttpResponse) {
+            const elapsed = Date.now() - started;
+            console.log(`Request for ${req.urlWithParams} took ${elapsed} ms.`);
+          }
+        })
+      );
   }
 }
 ```
-Notice the RxJS `do()` operator&mdash;it adds a side effect to an Observable without affecting the values on the stream. Here, it detects the `HttpResponse` event and logs the time the request took.
+Notice the RxJS `tap()` operator&mdash;it adds a side effect to an Observable without affecting the values on the stream. Here, it detects the `HttpResponse` event and logs the time the request took.
 
 #### Caching
 

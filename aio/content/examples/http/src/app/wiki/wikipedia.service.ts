@@ -2,7 +2,7 @@
 import { Injectable } from '@angular/core';
 import { Jsonp, URLSearchParams } from '@angular/http';
 
-import 'rxjs/add/operator/map';
+import { map } from 'rxjs/operators/map';
 
 @Injectable()
 export class WikipediaService {
@@ -24,7 +24,7 @@ export class WikipediaService {
     // TODO: Add error handling
     return this.jsonp
                .get(wikiUrl, { search: params })
-               .map(response => <string[]> response.json()[1]);
+               .pipe(map(response => <string[]> response.json()[1]));
     // #enddocregion call-jsonp
   }
 }

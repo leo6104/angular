@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { Location, PlatformLocation } from '@angular/common';
 
 import { ReplaySubject } from 'rxjs/ReplaySubject';
-import 'rxjs/add/operator/do';
+import { tap } from 'rxjs/operators/tap';
+import { map } from 'rxjs/operators/map';
 
 import { GaService } from 'app/shared/ga.service';
 import { SwUpdatesService } from 'app/sw-updates/sw-updates.service';
@@ -15,11 +16,13 @@ export class LocationService {
   private swUpdateActivated = false;
 
   currentUrl = this.urlSubject
-    .map(url => this.stripSlashes(url));
+    .pipe(map(url => this.stripSlashes(url)));
 
   currentPath = this.currentUrl
-    .map(url => url.match(/[^?#]*/)[0]) // strip query and hash
-    .do(path => this.gaService.locationChanged(path));
+    .pipe(
+      map(url => url.match(/[^?#]*/)[0]), // strip query and hash
+      tap(path => this.gaService.locationChanged(path))
+    );
 
   constructor(
     private gaService: GaService,

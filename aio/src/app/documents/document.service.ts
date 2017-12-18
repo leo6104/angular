@@ -4,8 +4,9 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs/Observable';
 import { AsyncSubject } from 'rxjs/AsyncSubject';
 import { of } from 'rxjs/observable/of';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/switchMap';
+import { catchError } from 'rxjs/operators/catchError';
+import { switchMap } from 'rxjs/operators/switchMap';
+import { tap } from 'rxjs/operators/tap';
 
 import { DocumentContents } from './document-contents';
 export { DocumentContents } from './document-contents';
@@ -43,7 +44,7 @@ export class DocumentService {
     private http: HttpClient,
     location: LocationService) {
     // Whenever the URL changes we try to get the appropriate doc
-    this.currentDocument = location.currentPath.switchMap(path => this.getDocument(path));
+    this.currentDocument = location.currentPath.pipe(switchMap(path => this.getDocument(path)));
   }
 
   private getDocument(url: string) {
@@ -62,16 +63,17 @@ export class DocumentService {
     this.logger.log('fetching document from', requestPath);
     this.http
       .get<DocumentContents>(requestPath, {responseType: 'json'})
-      .do(data => {
-        if (!data || typeof data !== 'object') {
-          this.logger.log('received invalid data:', data);
-          throw Error('Invalid data');
-        }
-      })
-      .catch((error: HttpErrorResponse) => {
-        return error.status === 404 ? this.getFileNotFoundDoc(id) : this.getErrorDoc(id, error);
-      })
-      .subscribe(subject);
+      .pipe(
+        tap(data => {
+          if (!data || typeof data !== 'object') {
+            this.logger.log('received invalid data:', data);
+            throw Error('Invalid data');
+          }
+        }),
+        catchError((error: HttpErrorResponse) => {
+          return error.status === 404 ? this.getFileNotFoundDoc(id) : this.getErrorDoc(id, error);
+        })
+      ).subscribe(subject);
 
     return subject.asObservable();
   }

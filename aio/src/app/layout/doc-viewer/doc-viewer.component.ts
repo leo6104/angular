@@ -4,10 +4,10 @@ import { Title } from '@angular/platform-browser';
 import { Observable } from 'rxjs/Observable';
 import { of } from 'rxjs/observable/of';
 import { timer } from 'rxjs/observable/timer';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/do';
-import 'rxjs/add/operator/switchMap';
-import 'rxjs/add/operator/takeUntil';
+import { catchError } from 'rxjs/operators/catchError';
+import { tap } from 'rxjs/operators/tap';
+import { switchMap } from 'rxjs/operators/switchMap';
+import { takeUntil } from 'rxjs/operators/takeUntil';
 
 import { DocumentContents } from 'app/documents/document.service';
 import { EmbedComponentsService } from 'app/embed-components/embed-components.service';
@@ -83,9 +83,10 @@ export class DocViewerComponent implements DoCheck, OnDestroy {
 
     this.onDestroy$.subscribe(() => this.destroyEmbeddedComponents());
     this.docContents$
-        .switchMap(newDoc => this.render(newDoc))
-        .takeUntil(this.onDestroy$)
-        .subscribe();
+        .pipe(
+          switchMap(newDoc => this.render(newDoc)),
+          takeUntil(this.onDestroy$)
+        ).subscribe();
   }
 
   ngDoCheck() {
@@ -143,19 +144,21 @@ export class DocViewerComponent implements DoCheck, OnDestroy {
     return this.void$
         // Security: `doc.contents` is always authored by the documentation team
         //           and is considered to be safe.
-        .do(() => this.nextViewContainer.innerHTML = doc.contents || '')
-        .do(() => addTitleAndToc = this.prepareTitleAndToc(this.nextViewContainer, doc.id))
-        .switchMap(() => this.embedComponentsService.embedInto(this.nextViewContainer))
-        .do(() => this.docReady.emit())
-        .do(() => this.destroyEmbeddedComponents())
-        .do(componentRefs => this.embeddedComponentRefs = componentRefs)
-        .switchMap(() => this.swapViews(addTitleAndToc))
-        .do(() => this.docRendered.emit())
-        .catch(err => {
-          this.nextViewContainer.innerHTML = '';
-          this.logger.error(`[DocViewer]: Error preparing document '${doc.id}'.`, err);
-          return this.void$;
-        });
+        .pipe(
+          tap(() => this.nextViewContainer.innerHTML = doc.contents || ''),
+          tap(() => addTitleAndToc = this.prepareTitleAndToc(this.nextViewContainer, doc.id)),
+          switchMap(() => this.embedComponentsService.embedInto(this.nextViewContainer)),
+          tap(() => this.docReady.emit()),
+          tap(() => this.destroyEmbeddedComponents()),
+          tap(componentRefs => this.embeddedComponentRefs = componentRefs),
+          switchMap(() => this.swapViews(addTitleAndToc)),
+          tap(() => this.docRendered.emit()),
+          catchError(err => {
+            this.nextViewContainer.innerHTML = '';
+            this.logger.error(`[DocViewer]: Error preparing document '${doc.id}'.`, err);
+            return this.void$;
+          })
+        );
   }
 
   /**
@@ -188,16 +191,19 @@ export class DocViewerComponent implements DoCheck, OnDestroy {
         (elem: HTMLElement, prop: string, from: string, to: string, duration = 333) => {
           elem.style.transition = '';
           return !DocViewerComponent.animationsEnabled
-              ? this.void$.do(() => elem.style[prop] = to)
+              ? this.void$.pipe(tap(() => elem.style[prop] = to))
               : this.void$
                     // In order to ensure that the `from` value will be applied immediately (i.e.
                     // without transition) and that the `to` value will be affected by the
                     // `transition` style, we need to ensure an animation frame has passed between
                     // setting each style.
-                    .switchMap(() => raf$).do(() => elem.style[prop] = from)
-                    .switchMap(() => raf$).do(() => elem.style.transition = `all ${duration}ms ease-in-out`)
-                    .switchMap(() => raf$).do(() => elem.style[prop] = to)
-                    .switchMap(() => timer(getActualDuration(elem))).switchMap(() => this.void$);
+                    .pipe(
+                      switchMap(() => raf$), tap(() => elem.style[prop] = from),
+                      switchMap(() => raf$), tap(() => elem.style.transition = `all ${duration}ms ease-in-out`),
+                      switchMap(() => raf$), tap(() => elem.style[prop] = to),
+                      switchMap(() => timer(getActualDuration(elem))),
+                      switchMap(() => this.void$)
+                    );
         };
 
     const animateLeave = (elem: HTMLElement) => animateProp(elem, 'opacity', '1', '0.25');
@@ -208,23 +214,27 @@ export class DocViewerComponent implements DoCheck, OnDestroy {
     if (this.currViewContainer.parentElement) {
       done$ = done$
           // Remove the current view from the viewer.
-          .switchMap(() => animateLeave(this.currViewContainer))
-          .do(() => this.currViewContainer.parentElement.removeChild(this.currViewContainer))
-          .do(() => this.docRemoved.emit());
+          .pipe(
+            switchMap(() => animateLeave(this.currViewContainer)),
+            tap(() => this.currViewContainer.parentElement.removeChild(this.currViewContainer)),
+            tap(() => this.docRemoved.emit())
+          );
     }
 
     return done$
         // Insert the next view into the viewer.
-        .do(() => this.hostElement.appendChild(this.nextViewContainer))
-        .do(() => onInsertedCb())
-        .do(() => this.docInserted.emit())
-        .switchMap(() => animateEnter(this.nextViewContainer))
-        // Update the view references and clean up unused nodes.
-        .do(() => {
-          const prevViewContainer = this.currViewContainer;
-          this.currViewContainer = this.nextViewContainer;
-          this.nextViewContainer = prevViewContainer;
-          this.nextViewContainer.innerHTML = '';  // Empty to release memory.
-        });
+        .pipe(
+          tap(() => this.hostElement.appendChild(this.nextViewContainer)),
+          tap(() => onInsertedCb()),
+          tap(() => this.docInserted.emit()),
+          switchMap(() => animateEnter(this.nextViewContainer)),
+          // Update the view references and clean up unused nodes.
+          tap(() => {
+            const prevViewContainer = this.currViewContainer;
+            this.currViewContainer = this.nextViewContainer;
+            this.nextViewContainer = prevViewContainer;
+            this.nextViewContainer.innerHTML = '';  // Empty to release memory.
+          })
+        );
   }
 }

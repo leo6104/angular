@@ -14,8 +14,8 @@ import {
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/of';
 
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/do';
+import { catchError } from 'rxjs/operators/catchError';
+import { tap } from 'rxjs/operators/tap';
 import 'rxjs/add/operator/toPromise';
 
 import { Hero } from './hero';
@@ -86,14 +86,14 @@ describe('Http-HeroService (mockBackend)', () => {
           });
       })));
 
-      it('should have expected fake heroes (Observable.do)', async(inject([], () => {
+      it('should have expected fake heroes (Observable.tap)', async(inject([], () => {
         backend.connections.subscribe((c: MockConnection) => c.mockRespond(response));
 
         service.getHeroes()
-          .do(heroes => {
+          .pipe(tap(heroes => {
             expect(heroes.length).toBe(fakeHeroes.length,
               'should have expected no. of heroes');
-          })
+          }))
           .toPromise();
       })));
 
@@ -103,9 +103,9 @@ describe('Http-HeroService (mockBackend)', () => {
         backend.connections.subscribe((c: MockConnection) => c.mockRespond(resp));
 
         service.getHeroes()
-          .do(heroes => {
+          .pipe(tap(heroes => {
             expect(heroes.length).toBe(0, 'should have no heroes');
-          })
+          }))
           .toPromise();
       })));
 
@@ -114,14 +114,15 @@ describe('Http-HeroService (mockBackend)', () => {
         backend.connections.subscribe((c: MockConnection) => c.mockRespond(resp));
 
         service.getHeroes()
-          .do(heroes => {
-            fail('should not respond with heroes');
-          })
-          .catch(err => {
-            expect(err).toMatch(/Bad response status/, 'should catch bad response status code');
-            return Observable.of(null); // failure is the expected test result
-          })
-          .toPromise();
+          .pipe(
+            tap(heroes => {
+              fail('should not respond with heroes');
+            }),
+            catchError(err => {
+              expect(err).toMatch(/Bad response status/, 'should catch bad response status code');
+              return Observable.of(null); // failure is the expected test result
+            })
+          ).toPromise();
       })));
   });
 });

@@ -5,7 +5,7 @@ import {
 
 import { Observable } from 'rxjs/Observable';
 import { of } from 'rxjs/observable/of';
-import 'rxjs/add/operator/switchMap';
+import { switchMap } from 'rxjs/operators/switchMap';
 
 
 export interface EmbeddedComponentFactory {
@@ -79,8 +79,10 @@ export class EmbedComponentsService {
     return !requiredComponents.length
         ? of([])
         : of(undefined)
-              .switchMap(() => Promise.all(factoriesReady))
-              .switchMap(() => [this.createComponents(elem)]);
+              .pipe(
+                switchMap(() => Promise.all(factoriesReady)),
+                switchMap(() => [this.createComponents(elem)])
+              );
   }
 
   /**

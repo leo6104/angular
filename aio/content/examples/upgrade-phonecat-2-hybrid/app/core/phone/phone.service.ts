@@ -8,7 +8,7 @@ declare var angular: angular.IAngularStatic;
 import { downgradeInjectable } from '@angular/upgrade/static';
 // #enddocregion downgrade-injectable
 
-import 'rxjs/add/operator/map';
+import { map } from 'rxjs/operators/map';
 
 // #docregion phonedata-interface
 export interface PhoneData {
@@ -26,11 +26,11 @@ export class Phone {
   constructor(private http: Http) { }
   query(): Observable<PhoneData[]> {
     return this.http.get(`phones/phones.json`)
-      .map((res: Response) => res.json());
+      .pipe(map((res: Response) => res.json()));
   }
   get(id: string): Observable<PhoneData> {
     return this.http.get(`phones/${id}.json`)
-      .map((res: Response) => res.json());
+      .pipe(map((res: Response) => res.json()));
   }
 // #docregion classdef, downgrade-injectable
 }

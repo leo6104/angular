@@ -9,8 +9,8 @@ import { Observable } from 'rxjs/Observable';
 import { ReplaySubject } from 'rxjs/ReplaySubject';
 import 'rxjs/add/observable/race';
 import 'rxjs/add/observable/timer';
-import 'rxjs/add/operator/concatMap';
-import 'rxjs/add/operator/publishReplay';
+import { concatMap } from 'rxjs/operators/concatMap';
+import { publishReplay } from 'rxjs/operators/publishReplay';
 import { WebWorkerClient } from 'app/shared/web-worker';
 import { SearchResults } from 'app/search/interfaces';
 
@@ -36,11 +36,14 @@ export class SearchService {
         Observable.timer(initDelay),
         (this.searchesSubject as Observable<string>).first()
       )
-      .concatMap(() => {
-        // Create the worker and load the index
-        this.worker = WebWorkerClient.create(workerUrl, this.zone);
-        return this.worker.sendMessage<boolean>('load-index');
-      }).publishReplay(1);
+      .pipe(
+        concatMap(() => {
+          // Create the worker and load the index
+          this.worker = WebWorkerClient.create(workerUrl, this.zone);
+          return this.worker.sendMessage<boolean>('load-index');
+        }),
+        publishReplay(1)
+      );
 
     // Connect to the observable to kick off the timer
     ready.connect();
@@ -56,6 +59,6 @@ export class SearchService {
     // Trigger the searches subject to override the init delay timer
     this.searchesSubject.next(query);
     // Once the index has loaded, switch to listening to the searches coming in.
-    return this.ready.concatMap(() => this.worker.sendMessage<SearchResults>('query-index', query));
+    return this.ready.pipe(concatMap(() => this.worker.sendMessage<SearchResults>('query-index', query)));
   }
 }

@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 
 import { Observable } from 'rxjs/Observable';
 import { fromPromise } from 'rxjs/observable/fromPromise';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/first';
+import { map } from 'rxjs/operators/map';
+import { first } from 'rxjs/operators/first';
 
 import { Logger } from 'app/shared/logger.service';
 
@@ -49,15 +49,17 @@ export class PrettyPrinter {
    * @returns Observable<string> - Observable of formatted code
    */
   formatCode(code: string, language?: string, linenums?: number | boolean) {
-    return this.prettyPrintOne.map(ppo => {
-      try {
-        return ppo(code, language, linenums);
-      } catch (err) {
-        const msg = `Could not format code that begins '${code.substr(0, 50)}...'.`;
-        console.error(msg, err);
-        throw new Error(msg);
-      }
-    })
-    .first(); // complete immediately
+    return this.prettyPrintOne.pipe(
+      map(ppo => {
+        try {
+          return ppo(code, language, linenums);
+        } catch (err) {
+          const msg = `Could not format code that begins '${code.substr(0, 50)}...'.`;
+          console.error(msg, err);
+          throw new Error(msg);
+        }
+      }),
+      first()
+    ); // complete immediately
   }
 }
